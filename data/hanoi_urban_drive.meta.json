@@ -1,0 +1,13 @@
+{
+  "profile": "hanoi-pbf",
+  "bbox": [
+    105.2,
+    20.5,
+    106.1,
+    21.45
+  ],
+  "nodes": 350930,
+  "edges": 864982,
+  "source": "vietnam-latest.osm.pbf",
+  "created_at": "2026-10-22T17:21:16.751968+00:00"
+}

@@ -9,6 +9,7 @@ from shapely.geometry import box
 
 from src.geocoding import ensure_in_hanoi, search_location
 from src.map_service import (
+    _load_bundled_road_network,
     add_travel_times,
     bbox_contains,
     bbox_dimensions_km,
@@ -110,6 +111,36 @@ class ServiceTests(unittest.TestCase):
                 first = bundled_graph_version()
                 pickle_path.write_bytes(b"version-two")
                 self.assertNotEqual(first, bundled_graph_version())
+
+    def test_bundled_loader_explains_missing_git_lfs_data(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            pointer = b"version https://git-lfs.github.com/spec/v1\noid sha256:test\nsize 123\n"
+            pickle_path = root / "graph.pkl"
+            graphml_path = root / "graph.graphml"
+            pickle_path.write_bytes(pointer)
+            graphml_path.write_bytes(pointer)
+            with patch("src.map_service.BUNDLED_GRAPH_FAST_PATH", pickle_path), patch(
+                "src.map_service.BUNDLED_GRAPH_PATH", graphml_path
+            ), self.assertRaisesRegex(UserFacingError, "git lfs pull"):
+                _load_bundled_road_network(("lfs-pointer", str(root)))
+
+    def test_bundled_loader_falls_back_when_pickle_is_corrupt(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            pickle_path = root / "graph.pkl"
+            graphml_path = root / "graph.graphml"
+            pickle_path.write_bytes(b"not-a-pickle")
+            graph = sample_graph()
+            graph.add_edge(2, 1, length=100, travel_time=20)
+            graph.add_edge(1, 0, length=100, travel_time=20)
+            import osmnx as ox
+            ox.io.save_graphml(graph, graphml_path)
+            with patch("src.map_service.BUNDLED_GRAPH_FAST_PATH", pickle_path), patch(
+                "src.map_service.BUNDLED_GRAPH_PATH", graphml_path
+            ):
+                loaded = _load_bundled_road_network(("fallback", str(root)))
+            self.assertGreater(loaded.number_of_edges(), 0)
 
     def test_bundled_graph_routes_all_popular_locations(self):
         from data.popular_locations import POPULAR_LOCATIONS

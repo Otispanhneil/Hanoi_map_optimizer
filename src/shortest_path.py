@@ -9,15 +9,6 @@ import networkx as nx
 from src.utils import UserFacingError
 
 
-def validate_weights(graph: nx.MultiDiGraph, weight: str) -> None:
-    if weight not in {"length", "travel_time"}:
-        raise ValueError("Trọng số phải là length hoặc travel_time.")
-    for _, _, data in graph.edges(data=True):
-        value = data.get(weight)
-        if value is None or not isfinite(float(value)) or float(value) < 0:
-            raise UserFacingError("Dữ liệu đường có trọng số thiếu hoặc không hợp lệ. Hãy tải lại dữ liệu.")
-
-
 def shortest_path(graph: nx.MultiDiGraph, source: Hashable, target: Hashable,
                   weight: str = "length") -> tuple[list, float]:
     """Tìm đường ngắn nhất bằng Dijkstra, trả (node path, cost)."""

@@ -1,6 +1,6 @@
 """Các heuristic đơn giản để so sánh với nghiệm tối ưu Held–Karp."""
 from collections.abc import Sequence
-from math import inf, isfinite
+from math import isfinite
 
 from src.utils import UserFacingError
 

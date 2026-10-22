@@ -100,12 +100,13 @@ hanoi-route-optimizer/
 │   └── visualization.py        # Bản đồ Folium
 ├── data/
 │   ├── popular_locations.py     # Các địa điểm gợi ý
-│   ├── hanoi_urban_drive.graphml # Mạng đường đô thị đóng gói sẵn
+│   ├── hanoi_urban_drive.graphml # Mạng đường Hà Nội đóng gói sẵn
 │   ├── hanoi_urban_drive.pkl     # Bản đã lọc để nạp nhanh khi chạy
 │   └── hanoi_urban_drive.meta.json # Profile và phạm vi graph hiện hành
 ├── scripts/
 │   ├── preload_hanoi.py        # Tạo graph urban/west trước khi triển khai
 │   ├── preload_hanoi_pbf.py    # Tạo graph toàn Hà Nội từ PBF cục bộ
+│   ├── smoke_offline.py        # Kiểm tra pipeline bằng graph đóng gói
 │   └── smoke_live.py           # Kiểm tra tích hợp dịch vụ OSM thực (tùy chọn)
 └── tests/                     # Unit test và Streamlit AppTest offline
 ```
@@ -114,9 +115,9 @@ Stack: Python, Streamlit, OSMnx, NetworkX, Folium, streamlit-folium, Pandas, Num
 
 ## Dijkstra và ma trận chi phí
 
-`src/shortest_path.py` dùng Dijkstra của NetworkX. Đồ thị `MultiDiGraph` giữ chiều đường và nhiều cạnh giữa hai nút. Trọng số `length` có đơn vị mét; `travel_time` có đơn vị giây. Không dùng A*.
+`src/shortest_path.py` **tự cài đặt Dijkstra bằng heap nhị phân** trên cấu trúc `MultiDiGraph` của NetworkX. Đồ thị giữ chiều đường và nhiều cạnh giữa hai nút; với các cạnh song song, thuật toán lấy cạnh có trọng số nhỏ nhất theo đúng mục tiêu đang chọn. Trọng số `length` có đơn vị mét; `travel_time` có đơn vị giây. Không dùng A* hoặc hàm shortest-path có sẵn của NetworkX.
 
-Chạy Dijkstra một lần từ mỗi địa điểm, lấy chi phí và lưu node path tới các địa điểm còn lại. Với `m = n + 1` địa điểm, phần tìm khoảng cách có độ phức tạp khoảng `O(m (V + E) log V)` trên heap nhị phân, chưa tính sao chép/lưu các đường đi của API NetworkX. Ma trận không nhất thiết đối xứng. Cặp không có đường là `+∞`; không loại cả bài toán chỉ vì có một cặp không tới được, bởi Open TSP vẫn có thể có nghiệm.
+Chạy Dijkstra một lần từ mỗi địa điểm và dừng sớm ngay khi đã chốt đủ các nút đích, sau đó truy vết đường đi cho các cặp địa điểm. Với `m = n + 1` địa điểm, cận trên của phần tìm khoảng cách là `O(m (V + E) log V)` trên heap nhị phân. Ma trận không nhất thiết đối xứng. Cặp không có đường là `+∞`; không loại cả bài toán chỉ vì có một cặp không tới được, bởi Open TSP vẫn có thể có nghiệm.
 
 Khi dựng tuyến, chọn cạnh song song có trọng số nhỏ nhất **theo đúng tiêu chí đang tối ưu**. Tổng quãng đường, tổng thời gian và geometry đều lấy từ cùng các cạnh đó, không trộn tuyến ngắn nhất và tuyến nhanh nhất.
 
@@ -203,9 +204,12 @@ Kết quả kiểm tra thực tế và các giới hạn xác minh được ghi 
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 .\.venv\Scripts\python.exe -m compileall -q app.py src data tests scripts
 .\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe scripts\smoke_offline.py
 ```
 
-Các test offline kiểm tra Held–Karp với vét cạn cho free end, fixed end và Closed TSP; ma trận ngẫu nhiên có hướng 2–6 node và mọi start; 10 điểm ghé; Nearest Neighbor; 2-opt; đường một chiều; cạnh song song; dữ liệu lỗi; tọa độ; snap; tốc độ fallback; geometry và thống kê. Streamlit AppTest kiểm tra mở app, thêm/xóa/trùng điểm, tính tuyến bằng graph thử nghiệm và xóa kết quả cũ khi đổi tiêu chí.
+`smoke_offline.py` nạp đúng graph đi kèm, snap năm địa điểm phổ biến, chạy toàn bộ pipeline cho cả quãng đường và thời gian, rồi kiểm tra tổng chi phí có khớp với các chặng đã dựng hay không. Script không gọi dịch vụ mạng.
+
+Các test offline kiểm tra Held–Karp với vét cạn cho free end, fixed end và Closed TSP; ma trận ngẫu nhiên có hướng 2–6 node và mọi start; 10 điểm ghé; Nearest Neighbor; 2-opt; đường một chiều; cạnh song song; dữ liệu lỗi; tọa độ; snap; tốc độ fallback; geometry và thống kê. Streamlit AppTest kiểm tra mở app, thêm/xóa/trùng điểm, tính tuyến bằng graph thử nghiệm và xóa kết quả cũ khi đổi tiêu chí. Bộ test cũng xác nhận thông báo khi thiếu Git LFS và khả năng tự dùng GraphML nếu tệp Pickle bị hỏng.
 
 Kiểm tra tích hợp thật (cần Internet, gọi Nominatim/Overpass và ghi cache):
 

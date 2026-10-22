@@ -35,9 +35,8 @@ BBOX_GRID_DEGREES = 0.01
 _PREFETCH_EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="road-network")
 _PREFETCH_FUTURES: dict[tuple[float, float, float, float], Future] = {}
 _PREFETCH_LOCK = Lock()
-_BUNDLED_FUTURE: Future | None = None
-_BUNDLED_FUTURE_VERSION: tuple | None = None
 _OVERPASS_LOCK = Lock()
+_GIT_LFS_POINTER_HEADER = b"version https://git-lfs.github.com/spec/v1"
 OVERPASS_ENDPOINTS = (
     "https://overpass.private.coffee/api",
     "https://overpass-api.de/api",
@@ -142,10 +141,6 @@ def graph_cache_path(bbox: tuple[float, float, float, float]):
     return CACHE_DIR / "graphs" / f"{key}.graphml"
 
 
-def has_cached_road_network(bbox: tuple[float, float, float, float]) -> bool:
-    return graph_cache_path(bbox).is_file()
-
-
 def bundled_graph_version() -> tuple:
     """Khóa cache thay đổi ngay khi Pickle/metadata trên đĩa được thay thế."""
     return tuple(
@@ -154,38 +149,59 @@ def bundled_graph_version() -> tuple:
     )
 
 
+def _is_git_lfs_pointer(path) -> bool:
+    """Nhận biết clone chưa tải nội dung Git LFS thay vì để pickle báo lỗi khó hiểu."""
+    try:
+        with path.open("rb") as stream:
+            return stream.read(len(_GIT_LFS_POINTER_HEADER)) == _GIT_LFS_POINTER_HEADER
+    except OSError:
+        return False
+
+
+def _validate_loaded_graph(graph) -> nx.MultiDiGraph:
+    if not isinstance(graph, nx.MultiDiGraph) or graph.number_of_nodes() == 0 or graph.number_of_edges() == 0:
+        raise ValueError("Graph phải là MultiDiGraph không rỗng.")
+    return graph
+
+
 @st.cache_resource(show_spinner=False)
 def _load_bundled_road_network(version: tuple) -> nx.MultiDiGraph:
-    """Đọc graph đi kèm và giữ thành phần liên thông mạnh chính để định tuyến ổn định."""
+    """Ưu tiên Pickle nhanh, tự rơi về GraphML và báo rõ trường hợp thiếu Git LFS."""
     # ``version`` được dùng làm khóa cache; dữ liệu thực vẫn đọc từ các đường dẫn chuẩn.
+    lfs_pointer_found = False
     if BUNDLED_GRAPH_FAST_PATH.is_file():
-        with BUNDLED_GRAPH_FAST_PATH.open("rb") as stream:
-            graph = pickle.load(stream)
-        if not isinstance(graph, nx.MultiDiGraph):
-            raise UserFacingError("Dữ liệu mạng đường Hà Nội đóng gói không hợp lệ.")
-        return graph
-    if not BUNDLED_GRAPH_PATH.is_file():
+        lfs_pointer_found = _is_git_lfs_pointer(BUNDLED_GRAPH_FAST_PATH)
+        if not lfs_pointer_found:
+            try:
+                with BUNDLED_GRAPH_FAST_PATH.open("rb") as stream:
+                    return _validate_loaded_graph(pickle.load(stream))
+            except (OSError, EOFError, pickle.PickleError, AttributeError, TypeError, ValueError):
+                logger.warning("Không đọc được graph Pickle; thử GraphML thay thế.", exc_info=True)
+    if BUNDLED_GRAPH_PATH.is_file():
+        if _is_git_lfs_pointer(BUNDLED_GRAPH_PATH):
+            lfs_pointer_found = True
+        else:
+            try:
+                graph = _validate_loaded_graph(ox.io.load_graphml(BUNDLED_GRAPH_PATH))
+                component = max(nx.strongly_connected_components(graph), key=len)
+                return _validate_loaded_graph(graph.subgraph(component).copy())
+            except (OSError, ValueError, nx.NetworkXException):
+                logger.warning("Không đọc được graph GraphML đóng gói.", exc_info=True)
+    if lfs_pointer_found:
+        raise UserFacingError(
+            "Dữ liệu bản đồ Git LFS chưa được tải. Hãy chạy 'git lfs install' rồi "
+            "'git lfs pull' trong thư mục dự án và khởi động lại ứng dụng."
+        )
+    if not BUNDLED_GRAPH_FAST_PATH.is_file() and not BUNDLED_GRAPH_PATH.is_file():
         raise UserFacingError("Chưa có dữ liệu mạng đường Hà Nội đóng gói.")
-    graph = ox.io.load_graphml(BUNDLED_GRAPH_PATH)
-    component = max(nx.strongly_connected_components(graph), key=len)
-    return graph.subgraph(component).copy()
+    raise UserFacingError(
+        "Dữ liệu mạng đường Hà Nội đóng gói bị hỏng hoặc không đúng định dạng. "
+        "Hãy chạy 'git lfs pull' để tải lại dữ liệu."
+    )
 
 
 def load_bundled_road_network() -> nx.MultiDiGraph:
     return _load_bundled_road_network(bundled_graph_version())
-
-
-def prefetch_bundled_road_network() -> Future:
-    """Nạp graph đóng gói ở nền ngay khi ứng dụng khởi động."""
-    global _BUNDLED_FUTURE, _BUNDLED_FUTURE_VERSION
-    version = bundled_graph_version()
-    with _PREFETCH_LOCK:
-        if (_BUNDLED_FUTURE_VERSION != version
-                or _BUNDLED_FUTURE is None
-                or (_BUNDLED_FUTURE.done() and _BUNDLED_FUTURE.exception() is not None)):
-            _BUNDLED_FUTURE = _PREFETCH_EXECUTOR.submit(load_bundled_road_network)
-            _BUNDLED_FUTURE_VERSION = version
-        return _BUNDLED_FUTURE
 
 
 @st.cache_resource(show_spinner=False, max_entries=4)

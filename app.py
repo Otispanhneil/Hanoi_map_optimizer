@@ -334,11 +334,39 @@ def show_result(result) -> None:
         legs = [{"Từ": leg["from"], "Đến": leg["to"],
                  "Quãng đường (km)": round(leg["distance_m"] / 1000, 3),
                  "Ước tính (phút)": round(leg["travel_time_s"] / 60, 2)} for leg in result.legs]
+        st.markdown("**Cách hình thành lộ trình tối ưu**")
+        st.caption(
+            "Held–Karp đánh giá các trạng thái gồm tập điểm đã ghé và điểm kết thúc. "
+            "Bảng dưới là thứ tự được truy vết từ trạng thái có tổng chi phí nhỏ nhất, "
+            "không phải lựa chọn tham lam ở từng bước."
+        )
+        cumulative_cost = 0.0
+        trace_rows = []
+        for step, (leg, source, target) in enumerate(
+            zip(result.legs, result.order, result.order[1:]), start=1
+        ):
+            leg_cost = leg["distance_m"] if result.weight == "length" else leg["travel_time_s"]
+            cumulative_cost += leg_cost
+            trace_rows.append({
+                "Bước": step,
+                "Từ": result.locations[source].name,
+                "Điểm tiếp theo": result.locations[target].name,
+                "Chi phí chặng": round(leg_cost, 1),
+                "Chi phí lũy kế": round(cumulative_cost, 1),
+            })
+        st.dataframe(pd.DataFrame(trace_rows), hide_index=True, width="stretch")
+        st.caption(
+            "Đơn vị chi phí: mét" if result.weight == "length"
+            else "Đơn vị chi phí: giây di chuyển ước tính"
+        )
+
+        st.markdown("**Chi tiết từng chặng**")
         st.dataframe(pd.DataFrame(legs), hide_index=True, width="stretch")
         st.caption(f"Dijkstra: {result.dijkstra_seconds * 1000:.2f} ms · Held–Karp: {result.tsp_seconds * 1000:.2f} ms · Chuẩn bị dữ liệu: {st.session_state.get('preparation_seconds', 0):.2f} giây")
+        cost_unit = "m" if result.weight == "length" else "giây"
         comparison_rows = [{
             "Thuật toán": item["algorithm"],
-            "Chi phí": round(item["cost"], 2),
+            f"Chi phí ({cost_unit})": round(item["cost"], 2),
             "Thời gian (ms)": round(item["runtime_ms"], 3),
             "Lệch tối ưu (%)": round(item["gap_percent"], 2),
         } for item in result.comparisons]

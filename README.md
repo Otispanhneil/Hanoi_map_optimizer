@@ -35,7 +35,7 @@ Mở PowerShell tại thư mục dự án:
 ```powershell
 git lfs install
 git clone <URL_REPOSITORY>
-cd hanoi-route-optimizer
+cd Hanoi_map_optimizer
 py -3.11 -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt

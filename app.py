@@ -217,7 +217,7 @@ def initialize_state() -> None:
                 "custom_count": 0, "last_click": None, "notice": None,
                 "map_error": None, "road_graph": None, "road_bbox": None,
                 "road_future": None, "road_prefetch_bbox": None,
-                "bundled_graph": None, "bundled_version": None}
+                "bundled_graph": None, "bundled_version": None, "enable_map_click": True}
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
@@ -392,11 +392,37 @@ def show_result(result) -> None:
         )
 
 
-def main() -> None:
+def switch_mode(mode: str) -> None:
+    st.session_state.workspace_mode = mode
+    st.query_params["mode"] = mode
+
+
+def main(default_mode: str = "route") -> None:
     st.set_page_config(
         page_title="Tối ưu lộ trình Hà Nội", page_icon="🗺️",
         layout="wide", initial_sidebar_state="expanded",
     )
+    # Keep route widgets alive while the other mode is rendered.
+    for key in ("routing_criterion", "routing_end_mode", "routing_end_choice", "enable_map_click"):
+        if key in st.session_state:
+            st.session_state[key] = st.session_state[key]
+    mode = st.query_params.get("mode", st.session_state.get("workspace_mode", default_mode))
+    if mode not in {"route", "chase"}:
+        mode = "route"
+    st.session_state.workspace_mode = mode
+    with st.sidebar.container(key="app_navigation"):
+        st.caption("HANOI MAP LAB · THUẬT TOÁN ỨNG DỤNG")
+        route_tab, chase_tab = st.columns(2)
+        route_tab.button("Lộ trình", key="mode_route", width="stretch",
+                         type="primary" if mode == "route" else "secondary",
+                         on_click=switch_mode, args=("route",))
+        chase_tab.button("Trốn tìm", key="mode_chase", width="stretch",
+                         type="primary" if mode == "chase" else "secondary",
+                         on_click=switch_mode, args=("chase",))
+    if mode == "chase":
+        from src.chase_ui import render_chase
+        render_chase()
+        return
     initialize_state()
     apply_page_style()
     bundled_enabled = os.getenv("HANOI_PRELOAD_MAP", "1") != "0"
@@ -408,9 +434,13 @@ def main() -> None:
         current_bundled_version = bundled_graph_version()
         if (st.session_state.bundled_graph is None
                 or st.session_state.bundled_version != current_bundled_version):
-            with st.spinner("Đang chuẩn bị mạng đường Hà Nội…"):
-                st.session_state.bundled_graph = load_bundled_road_network()
-                st.session_state.bundled_version = current_bundled_version
+            try:
+                with st.spinner("Đang chuẩn bị mạng đường Hà Nội…"):
+                    st.session_state.bundled_graph = load_bundled_road_network()
+                    st.session_state.bundled_version = current_bundled_version
+            except UserFacingError as exc:
+                bundled_enabled = False
+                st.sidebar.warning(f"{exc} Giao diện vẫn dùng được; tính lộ trình sẽ cần cache hoặc tải OSM qua Internet.")
 
     with st.sidebar:
         st.markdown(
@@ -542,6 +572,7 @@ def main() -> None:
             criterion = st.radio(
                 "Tối thiểu hóa", ["Quãng đường", "Thời gian di chuyển"],
                 horizontal=True, label_visibility="collapsed",
+                key="routing_criterion",
             )
             weight = "length" if criterion == "Quãng đường" else "travel_time"
             with st.expander("Điểm kết thúc"):
@@ -549,6 +580,7 @@ def main() -> None:
                     "Điểm kết thúc",
                     ["Tự động", "Do tôi chọn", "Quay về điểm xuất phát"],
                     label_visibility="collapsed",
+                    key="routing_end_mode",
                 )
                 route_mode = {
                     "Tự động": "open",
@@ -557,15 +589,18 @@ def main() -> None:
                 }[route_mode_label]
                 end_destination = None
                 if route_mode == "fixed_end":
+                    if st.session_state.get("routing_end_choice") not in range(len(st.session_state.destinations)):
+                        st.session_state.routing_end_choice = None
                     end_destination = st.selectbox(
                         "Chọn điểm kết thúc",
                         range(len(st.session_state.destinations)),
-                        format_func=lambda i: st.session_state.destinations[i].name,
+                        format_func=[point.name for point in st.session_state.destinations].__getitem__,
                         index=None,
                         placeholder="Chọn trong các điểm cần ghé",
                         disabled=not st.session_state.destinations,
+                        key="routing_end_choice",
                     )
-            st.toggle("Chọn điểm bằng click bản đồ", value=True, key="enable_map_click")
+            st.toggle("Chọn điểm bằng click bản đồ", key="enable_map_click")
 
         margin = DEFAULT_MARGIN_KM
         with st.container(key="optimize_action"):

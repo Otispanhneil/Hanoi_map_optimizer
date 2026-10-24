@@ -6,3 +6,19 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .streamlit/secrets.toml
+.playwright-cli/
+
+# Sản phẩm trung gian khi biên dịch báo cáo LaTeX (giữ lại main.pdf)
+report/*.aux
+report/*.bbl
+report/*.blg
+report/*.fdb_latexmk
+report/*.fls
+report/*.lof
+report/*.lot
+report/*.out
+report/*.toc
+report/*.xdv
+report/*.synctex.gz
+# Ảnh chụp từng trang PDF dùng khi rà soát, sinh lại được khi cần
+report/preview/

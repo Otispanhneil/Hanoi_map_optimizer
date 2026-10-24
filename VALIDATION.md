@@ -1,5 +1,10 @@
 # Biên bản kiểm tra
 
+> Xác minh lại bản tích hợp ngày 23/10/2026: graph gốc đã phục hồi và kiểm tra SHA-256,
+> **112/112 test đạt**; pipeline thật và chuyển chế độ trên trình duyệt đều đã kiểm tra.
+> Xem số liệu và giới hạn hiện tại tại [CHASE_VALIDATION.md](CHASE_VALIDATION.md).
+> Nội dung bên dưới là biên bản gốc, không phải tất cả các thao tác đều được chạy lại ở lượt xác minh này.
+
 Ngày kiểm tra: **23/10/2026**. Môi trường Windows, Python **3.11.9**, dependency chi tiết trong `requirements-lock.txt`.
 
 ## Đã xác nhận

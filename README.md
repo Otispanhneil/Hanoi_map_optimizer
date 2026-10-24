@@ -1,5 +1,27 @@
 # HANOI ROUTE OPTIMIZER
 
+## Một ứng dụng, hai chế độ
+
+Màn hình chính vẫn là giao diện tối ưu lộ trình bên dưới. Sidebar có hai nút
+**Lộ trình / Trốn tìm** để chuyển trong cùng phiên. Các điểm, thiết lập và kết quả
+lộ trình được giữ khi sang chơi; tiến độ ván chơi được giữ khi quay về lộ trình.
+
+### Phần mở rộng: Bắt tôi nếu có thể
+
+Trò chơi trốn tìm theo lượt trên bản đồ Hà Nội, hai đội truy tìm, ba lối thoát,
+ba chiến thuật máy, vùng nghi ngờ, phát lại và tải nhật ký.
+
+```powershell
+.\.venv\Scripts\python.exe -m streamlit run app.py --server.port 8502
+```
+
+Mặc định mở **Lộ trình**. Chọn **Trốn tìm** hoặc mở `?mode=chase` để chơi.
+`chase_app.py` chỉ là điểm vào tương thích, mở cùng ứng dụng với chế độ trốn tìm trước.
+Không cần graph Hà Nội lớn để chơi.
+Xem [hướng dẫn và thuật toán](CHASE_GUIDE.md), [kết quả kiểm thử](CHASE_VALIDATION.md).
+Sân OSM đi kèm là một phần mạng đường được trích từ dữ liệu tải dở, được điều chỉnh
+thành hai chiều cho trò chơi; không phải mạng giao thông/đi bộ đầy đủ.
+
 **Tối ưu lộ trình đi qua nhiều địa điểm tại Hà Nội**, phục vụ bài tập lớn môn Thuật toán ứng dụng.
 
 Ứng dụng Python/Streamlit chọn một điểm xuất phát và 1–10 điểm cần ghé, rồi tìm thứ tự ghé tối ưu cho ô tô. Mặc định điểm cuối được chọn tự động; người dùng có thể chọn một điểm cuối cố định hoặc yêu cầu quay về điểm xuất phát. Có hai mục tiêu: tổng quãng đường hoặc tổng thời gian di chuyển ước tính.
@@ -107,7 +129,12 @@ hanoi-route-optimizer/
 │   ├── preload_hanoi.py        # Tạo graph urban/west trước khi triển khai
 │   ├── preload_hanoi_pbf.py    # Tạo graph toàn Hà Nội từ PBF cục bộ
 │   ├── smoke_offline.py        # Kiểm tra pipeline bằng graph đóng gói
-│   └── smoke_live.py           # Kiểm tra tích hợp dịch vụ OSM thực (tùy chọn)
+│   ├── smoke_live.py           # Kiểm tra tích hợp dịch vụ OSM thực (tùy chọn)
+│   ├── benchmark_tsp.py        # So sánh Held–Karp với NN/2-opt theo số điểm
+│   ├── benchmark_chase.py      # Benchmark 360 ván trò chơi truy tìm
+│   └── make_report_figures.py  # Sinh biểu đồ cho báo cáo từ JSON benchmark
+├── output/                    # Kết quả benchmark dạng JSON và ảnh kiểm tra
+├── report/                    # Báo cáo LaTeX (main.pdf là bản biên dịch)
 └── tests/                     # Unit test và Streamlit AppTest offline
 ```
 
@@ -208,6 +235,16 @@ Kết quả kiểm tra thực tế và các giới hạn xác minh được ghi 
 ```
 
 `smoke_offline.py` nạp đúng graph đi kèm, snap năm địa điểm phổ biến, chạy toàn bộ pipeline cho cả quãng đường và thời gian, rồi kiểm tra tổng chi phí có khớp với các chặng đã dựng hay không. Script không gọi dịch vụ mạng.
+
+Benchmark tầng thứ tự ghé (so sánh nghiệm chính xác với hai heuristic, 4–11 điểm, ba kiểu kết thúc):
+
+```powershell
+.\.venv\Scripts\python.exe scripts\benchmark_tsp.py --weight length
+.\.venv\Scripts\python.exe scripts\benchmark_tsp.py --weight travel_time `
+  --output output\routing\benchmark-tsp-time.json
+```
+
+Kết quả ghi vào `output/routing/`. Trên bộ 11 địa điểm mẫu, Held–Karp giữ dưới 7,2 ms ở giới hạn 10 điểm ghé; Nearest Neighbor lệch tới 19,53% và thêm 2-opt còn lệch tới 3,97% so với nghiệm tối ưu — con số đo được cho việc đánh đổi bảo đảm tối ưu lấy tốc độ.
 
 Các test offline kiểm tra Held–Karp với vét cạn cho free end, fixed end và Closed TSP; ma trận ngẫu nhiên có hướng 2–6 node và mọi start; 10 điểm ghé; Nearest Neighbor; 2-opt; đường một chiều; cạnh song song; dữ liệu lỗi; tọa độ; snap; tốc độ fallback; geometry và thống kê. Streamlit AppTest kiểm tra mở app, thêm/xóa/trùng điểm, tính tuyến bằng graph thử nghiệm và xóa kết quả cũ khi đổi tiêu chí. Bộ test cũng xác nhận thông báo khi thiếu Git LFS và khả năng tự dùng GraphML nếu tệp Pickle bị hỏng.
 

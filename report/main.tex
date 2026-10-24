@@ -1,0 +1,125 @@
+\documentclass[12pt,a4paper,oneside]{report}
+
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Termes}
+\usepackage[vietnamese]{babel}
+\usepackage[a4paper,top=2.5cm,bottom=3cm,left=3cm,right=2cm]{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs,longtable,array,multirow,tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{indentfirst}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[fontsize=13pt]{scrextend}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{1cm}
+\setlength{\parskip}{6pt}
+\setstretch{1.3}
+\renewcommand{\arraystretch}{1.25}
+\setlist[itemize]{leftmargin=1.8cm,itemsep=2pt,topsep=4pt,parsep=0pt}
+\setlist[enumerate]{leftmargin=1.8cm,itemsep=2pt,topsep=4pt,parsep=0pt}
+\graphicspath{{images/}}
+\captionsetup{font=normalsize,labelfont=bf,justification=centering}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\sloppy
+\emergencystretch=2em
+\raggedbottom
+\clubpenalty=10000
+\widowpenalty=10000
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\centering\fontsize{16pt}{20pt}\selectfont}
+  {CHƯƠNG \thechapter}{8pt}{\fontsize{16pt}{20pt}\selectfont\MakeUppercase}
+\titlespacing*{\chapter}{0pt}{0pt}{18pt}
+\titleformat{\section}
+  {\normalfont\bfseries\fontsize{14pt}{18pt}\selectfont}
+  {\thesection}{0.7em}{}
+\titlespacing*{\section}{0pt}{16pt}{6pt}
+\titleformat{\subsection}
+  {\normalfont\bfseries\fontsize{13pt}{17pt}\selectfont}
+  {\thesubsection}{0.7em}{}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+
+\definecolor{formulaTitle}{HTML}{087F8C}
+\definecolor{formulaFrame}{HTML}{0A98A7}
+\definecolor{formulaBack}{HTML}{F1FAFA}
+\definecolor{codeBack}{HTML}{F7F8FA}
+\newtcolorbox{formulabox}[1][]{
+  enhanced,breakable,colback=formulaBack,colframe=formulaFrame,boxrule=0.8pt,
+  arc=0pt,left=8pt,right=8pt,top=11pt,bottom=8pt,
+  fonttitle=\bfseries\color{white},coltitle=white,colbacktitle=formulaTitle,
+  attach boxed title to top left={xshift=0pt,yshift=-\tcboxedtitleheight/2},
+  boxed title style={boxrule=0pt,arc=0pt},title={Công thức},#1
+}
+\newtcolorbox{notebox}[1][]{breakable,colback=blue!3,colframe=blue!45!black,
+  boxrule=0.6pt,arc=1pt,title={Lưu ý},fonttitle=\bfseries,#1}
+
+\lstset{
+  language=Python,basicstyle=\ttfamily\footnotesize,backgroundcolor=\color{codeBack},
+  breaklines=true,frame=single,numbers=left,numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue!70!black}\bfseries,commentstyle=\color{gray}\itshape,
+  stringstyle=\color{teal!70!black},showstringspaces=false,tabsize=2
+}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\begin{document}
+\hypersetup{pageanchor=false}
+\pagenumbering{gobble}
+\input{chapters/00_trang_bia}
+\input{chapters/00_phu_bia}
+\input{chapters/00_loi_cam_on}
+\input{chapters/00_loi_cam_doan}
+\input{chapters/00_phan_cong}
+\input{chapters/00_tom_tat}
+\input{chapters/00_abstract}
+
+\tableofcontents
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{DANH MỤC HÌNH ẢNH}
+\listoffigures
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{DANH MỤC BẢNG}
+\listoftables
+\clearpage
+\input{chapters/00_viet_tat}
+
+\hypersetup{pageanchor=true}
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\input{chapters/01_gioi_thieu}
+\input{chapters/02_co_so_ly_thuyet}
+\input{chapters/03_phan_tich_thiet_ke}
+\input{chapters/04_cai_dat}
+\input{chapters/05_thuc_nghiem}
+\input{chapters/06_demo}
+\input{chapters/07_ket_luan}
+\input{chapters/08_phu_luc}
+
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
+\bibliographystyle{ieeetr}
+\bibliography{references}
+\end{document}

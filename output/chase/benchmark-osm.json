@@ -1,0 +1,135 @@
+{
+  "source": "osm",
+  "nodes": 358,
+  "edges": 1184,
+  "rules": {
+    "runner_budget": 160,
+    "hunter_budget": 160,
+    "reveal_every": 3,
+    "max_turns": 18
+  },
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+  ],
+  "results": [
+    {
+      "runner": "random",
+      "hunter": "trail",
+      "games": 20,
+      "escaped": 0,
+      "caught": 20,
+      "timeout": 0,
+      "mean_turns": 8.25,
+      "mean_step_ms": 2.026,
+      "max_step_ms": 11.804
+    },
+    {
+      "runner": "random",
+      "hunter": "search",
+      "games": 20,
+      "escaped": 0,
+      "caught": 20,
+      "timeout": 0,
+      "mean_turns": 7.95,
+      "mean_step_ms": 2.58,
+      "max_step_ms": 10.702
+    },
+    {
+      "runner": "random",
+      "hunter": "contain",
+      "games": 20,
+      "escaped": 0,
+      "caught": 19,
+      "timeout": 1,
+      "mean_turns": 9.3,
+      "mean_step_ms": 5.241,
+      "max_step_ms": 18.427
+    },
+    {
+      "runner": "nearest_exit",
+      "hunter": "trail",
+      "games": 20,
+      "escaped": 16,
+      "caught": 4,
+      "timeout": 0,
+      "mean_turns": 6.3,
+      "mean_step_ms": 2.137,
+      "max_step_ms": 11.864
+    },
+    {
+      "runner": "nearest_exit",
+      "hunter": "search",
+      "games": 20,
+      "escaped": 15,
+      "caught": 5,
+      "timeout": 0,
+      "mean_turns": 5.95,
+      "mean_step_ms": 2.297,
+      "max_step_ms": 8.666
+    },
+    {
+      "runner": "nearest_exit",
+      "hunter": "contain",
+      "games": 20,
+      "escaped": 16,
+      "caught": 4,
+      "timeout": 0,
+      "mean_turns": 6.15,
+      "mean_step_ms": 4.255,
+      "max_step_ms": 12.369
+    },
+    {
+      "runner": "evasive",
+      "hunter": "trail",
+      "games": 20,
+      "escaped": 15,
+      "caught": 1,
+      "timeout": 4,
+      "mean_turns": 9.65,
+      "mean_step_ms": 1.816,
+      "max_step_ms": 8.055
+    },
+    {
+      "runner": "evasive",
+      "hunter": "search",
+      "games": 20,
+      "escaped": 15,
+      "caught": 1,
+      "timeout": 4,
+      "mean_turns": 9.9,
+      "mean_step_ms": 2.273,
+      "max_step_ms": 8.62
+    },
+    {
+      "runner": "evasive",
+      "hunter": "contain",
+      "games": 20,
+      "escaped": 13,
+      "caught": 2,
+      "timeout": 5,
+      "mean_turns": 9.85,
+      "mean_step_ms": 3.716,
+      "max_step_ms": 11.151
+    }
+  ],
+  "limits": "Fixed scripted runners and starting layouts; not human play or optimal policies."
+}
